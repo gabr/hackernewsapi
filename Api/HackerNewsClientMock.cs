@@ -9,15 +9,15 @@ public class HackerNewsClientMock : IHackerNewsClient {
         for (int i = 0; i < _ids.Length; i++) _ids[i] = i;
     }
 
-    public async Task<int[]> GetNBestStoriesIdsAsync(int n) {
-        await Task.Delay(_delay);
+    public async Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct) {
+        await Task.Delay(_delay, ct);
         if (n <= 0) return Array.Empty<int>();
         if (n > HackerNewsClient.MAX_IDS_COUNT) n = HackerNewsClient.MAX_IDS_COUNT;
         return _ids.Take(n).ToArray();
     }
 
-    public async Task<HackerNewsStory> GetStoryByIdAsync(int id) {
-        await Task.Delay(_delay);
+    public async Task<HackerNewsStory> GetStoryByIdAsync(int id, CancellationToken ct) {
+        await Task.Delay(_delay, ct);
         return new HackerNewsStory {
             Id          = id,
             Title       = $"Test story with id: {id}",

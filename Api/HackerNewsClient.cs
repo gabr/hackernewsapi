@@ -9,20 +9,20 @@ public class HackerNewsClient : IHackerNewsClient {
 
     private HttpClient _client = new HttpClient();
 
-    public async Task<int[]> GetNBestStoriesIdsAsync(int n) {
+    public async Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct) {
         if (n <= 0) return Array.Empty<int>();
         if (n > MAX_IDS_COUNT) n = MAX_IDS_COUNT;
         _bestStoriesUriBuilder.Query = $"?orderBy=\"$key\"&limitToFirst={n}";
-        var bestStoriesIdsResponse = await _client.GetAsync(_bestStoriesUriBuilder.Uri);
+        using var bestStoriesIdsResponse = await _client.GetAsync(_bestStoriesUriBuilder.Uri, ct);
         bestStoriesIdsResponse.EnsureSuccessStatusCode();
-        return await bestStoriesIdsResponse.Content.ReadFromJsonAsync<int[]>() ??
+        return await bestStoriesIdsResponse.Content.ReadFromJsonAsync<int[]>(ct) ??
             throw new Exception($"Failed to deserialize HackerNews list of best stories ids");
     }
 
-    public async Task<HackerNewsStory> GetStoryByIdAsync(int id) {
-        var storyResponse = await _client.GetAsync($"https://hacker-news.firebaseio.com/v0/item/{id}.json");
+    public async Task<HackerNewsStory> GetStoryByIdAsync(int id, CancellationToken ct) {
+        using var storyResponse = await _client.GetAsync($"https://hacker-news.firebaseio.com/v0/item/{id}.json", ct);
         storyResponse.EnsureSuccessStatusCode();
-        return await storyResponse.Content.ReadFromJsonAsync<HackerNewsStory>() ??
+        return await storyResponse.Content.ReadFromJsonAsync<HackerNewsStory>(ct) ??
             throw new Exception($"Failed to deserialize HackerNews story id: {id}");
     }
 
