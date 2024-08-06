@@ -16,5 +16,7 @@ async Task Get(string url) {
     Console.WriteLine($"elapsed: {stopWatch.Elapsed}");
 }
 
-await Get("http://localhost:5000/best?n=101");
+//await Get("http://localhost:5000/best?n=101");
+
+await Parallel.ForAsync(0, 10000, async (_, _) => await Get("http://localhost:5000/best?n=201"));
 

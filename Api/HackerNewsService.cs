@@ -19,6 +19,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     private readonly IHackerNewsClient[] _clients = new IHackerNewsClient[50];
     private int _activeClients = 2;
     private Task<HackerNewsStory>[] _tasks = new Task<HackerNewsStory>[HackerNewsClient.MAX_IDS_COUNT];
+    private TaskCompletionSource<bool> _fetchedFirstStories = new TaskCompletionSource<bool>();
     private volatile HackerNewsStory[] _stories = Array.Empty<HackerNewsStory>();
     private readonly ILogger<HackerNewsService> _logger;
     private bool _disposed = false;
@@ -30,11 +31,10 @@ public class HackerNewsService : BackgroundService, IDisposable  {
         }
     }
 
-    public HackerNewsStory[] GetBestStories(int count) {
-        Console.WriteLine($">>> GetBestStories({count}");
+    public async ValueTask<HackerNewsStory[]> GetBestStoriesAsync(int count) {
         if (count <= 0) return Array.Empty<HackerNewsStory>();
+        if (_stories.Length == 0) await _fetchedFirstStories.Task;
         var stories = _stories;
-        Console.WriteLine($">>> stories.Length = {stories.Length}");
         return stories.Take(count).OrderByDescending(s => s.Score).ToArray();
     }
 
@@ -46,7 +46,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
                 stopWatch.Start();
                 await FetchNewData(ct);
                 stopWatch.Stop();
-                _logger.LogInformation($"{nameof(HackerNewsService)}: {DateTime.UtcNow.ToString("o")} fetched data - elapsed: {stopWatch.Elapsed}");
+                _logger.LogDebug($"{nameof(HackerNewsService)}: {DateTime.UtcNow.ToString("o")} fetched data - elapsed: {stopWatch.Elapsed} with {_activeClients}/{_clients.Length} clients");
                 stopWatch.Reset();
                 // double check before the dealy as the fetching might have taken a while
                 if (ct.IsCancellationRequested) break;
@@ -66,7 +66,6 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     private async Task FetchNewData(CancellationToken ct) {
         try {
             var bestStoriesIds = await _clients[0].GetNBestStoriesIdsAsync(HackerNewsClient.MAX_IDS_COUNT, ct);
-            _logger.LogInformation($"{nameof(HackerNewsService)} using {_activeClients}/{_clients.Length} clients");
             var stories = new HackerNewsStory[bestStoriesIds.Length];
             // kick start all the requests
             Parallel.For(0, stories.Length, (i, _) => _tasks[i] = _clients[i%_activeClients].GetStoryByIdAsync(bestStoriesIds[i], ct));
@@ -79,6 +78,8 @@ public class HackerNewsService : BackgroundService, IDisposable  {
             // wait for the responses and parse
             await Parallel.ForAsync(0, stories.Length, ct, async (i, _) => stories[i] = await _tasks[i]);
             _stories = stories;
+            if (!_fetchedFirstStories.Task.IsCompleted)
+                _fetchedFirstStories.SetResult(true);
         } catch (Exception ex) {
             _logger.LogError($"Fetching data exception: '{ex.ToString()}'", ex);
         }
