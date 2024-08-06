@@ -17,17 +17,16 @@ async Task Get(string url) {
     Console.WriteLine($"elapsed: {stopWatch.Elapsed}");
 }
 
-//await Get("http://localhost:5000/best?n=101");
+async Task StressTest() {
+    await Parallel.ForAsync(0, 1000,
+        new ParallelOptions { MaxDegreeOfParallelism = 100 },
+        async (_, _) => {
+            await Get("http://localhost:5000/best?n=1");
+            await Get("http://localhost:5000/best?n=101");
+            await Get("http://localhost:5000/best?n=200");
+            await Get("http://localhost:5000/best?n=500");
+        });
+}
 
-await Parallel.ForAsync(0, 1000,
-    new ParallelOptions { MaxDegreeOfParallelism = 100 },
-    async (_, _) => {
-        //await Get("http://localhost:5000/best?n=-10832423498");
-        //await Get("http://localhost:5000/best?n=-01");
-        //await Get("http://localhost:5000/best?n=1");
-        //await Get("http://localhost:5000/best?n=101");
-        await Get("http://localhost:5000/best?n=200");
-        //await Get("http://localhost:5000/best?n=500");
-        //await Get("http://localhost:5000/best?n=10730184832423498");
-    });
 
+await Get("http://localhost:5000/best?n=10");
