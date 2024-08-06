@@ -1,9 +1,11 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Api;
 
 public class HackerNewsStory {
     // the fields we return when serializing to JSON
+    [JsonIgnore]
     public int     Id           { get; init; }
     public string? Title        { get; init; }
     public string? Uri          => Url;

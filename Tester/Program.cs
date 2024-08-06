@@ -6,6 +6,7 @@ var stopWatch = new Stopwatch();
 
 async Task Get(string url) {
     Console.WriteLine($"GET: '{url}'");
+    stopWatch.Reset();
     stopWatch.Start();
     var jsonString = await client.GetStringAsync(url);
     stopWatch.Stop();
@@ -18,5 +19,13 @@ async Task Get(string url) {
 
 //await Get("http://localhost:5000/best?n=101");
 
-await Parallel.ForAsync(0, 10000, async (_, _) => await Get("http://localhost:5000/best?n=201"));
+await Parallel.ForAsync(0, 1000, async (_, _) => {
+    //await Get("http://localhost:5000/best?n=-10832423498");
+    //await Get("http://localhost:5000/best?n=-01");
+    //await Get("http://localhost:5000/best?n=1");
+    //await Get("http://localhost:5000/best?n=101");
+    await Get("http://localhost:5000/best?n=200");
+    //await Get("http://localhost:5000/best?n=500");
+    //await Get("http://localhost:5000/best?n=10730184832423498");
+});
 
