@@ -15,7 +15,9 @@ public class Program
         var logger = app.Services.GetRequiredService<ILogger<Program>>();
         if (mockData) logger.LogInformation("using mocked data");
         using var hackerNewsService = app.Services.GetRequiredService<HackerNewsService>();
-        app.MapGet("/best", async (Int32 n = 10) => await hackerNewsService.GetBestStoriesAsync(n));
+        app.MapGet("/best", async (Int32 n = 10) => Results.Content(
+            await hackerNewsService.GetBestStoriesAsJsonAsync(n),
+            System.Net.Mime.MediaTypeNames.Application.Json));
         app.Run();
     }
 }

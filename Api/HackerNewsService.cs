@@ -27,11 +27,18 @@ public class HackerNewsService : BackgroundService, IDisposable  {
         }
     }
 
-    public async ValueTask<HackerNewsStory[]> GetBestStoriesAsync(int count) {
-        if (count <= 0) return Array.Empty<HackerNewsStory>();
+    public async ValueTask<string> GetBestStoriesAsJsonAsync(int count) {
+        if (count <= 0) return string.Empty;
         if (_stories.Length == 0) await _fetchedFirstStories.Task;
         var stories = _stories;
-        return stories.Take(count).OrderByDescending(s => s.Score).ToArray();
+        return "[" +
+            string.Join(",",
+                stories
+                    .Take(count)
+                    .OrderByDescending(s => s.Score)
+                    .Select(s => s.GetJson())
+                    .ToArray())
+            + "]";
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct) {
