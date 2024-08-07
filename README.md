@@ -97,3 +97,4 @@ That was easy to work with but that's something which could be improved.
 
 Rest of the implementation changes would be dictated by the profiling outcome.
 
+a side note: I would also just scrap the data directly from the website instead of using the API as that would allow me to limit the number of necessary calls from 201 to just 7.
