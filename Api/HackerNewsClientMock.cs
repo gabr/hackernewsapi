@@ -8,26 +8,24 @@ namespace Api;
 /// </summary>
 public class HackerNewsClientMock : IHackerNewsClient {
     private TimeSpan _delay;
-    private int[] _ids = new int[HackerNewsClient.MAX_IDS_COUNT];
 
     /// <summary>
     /// Create mock class with added delaty to each call.
     /// </summary>
     public HackerNewsClientMock(TimeSpan delay) {
         _delay = delay;
-        for (int i = 0; i < _ids.Length; i++) _ids[i] = i;
     }
 
     /// <summary>
     /// Gets the specified amount of stories ids.
     /// These are just the integers from 0 to n-1.
-    /// The <c>n</c> has to be in range from 1 to <c>MAX_IDS_COUNT</c> otherwise it will be clamped.
     /// </summary>
     public async Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct) {
-        await Task.Delay(_delay, ct);
         if (n <= 0) return Array.Empty<int>();
-        if (n > HackerNewsClient.MAX_IDS_COUNT) n = HackerNewsClient.MAX_IDS_COUNT;
-        return _ids.Take(n).ToArray();
+        await Task.Delay(_delay, ct);
+        var ids = new int[n];
+        for (int i = 0; i < ids.Length; i++) ids[i] = i;
+        return ids;
     }
 
     /// <summary>

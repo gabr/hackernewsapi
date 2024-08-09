@@ -4,15 +4,6 @@ namespace Api;
 /// The Web API client used to fetch data from the HackerNews API.
 /// </summary>
 public class HackerNewsClient : IHackerNewsClient {
-    // Not acutally mentioned in the docs - determined experimentally.
-    // No matter what I did the maximum amount of the ids coming out
-    // of the /beststories.json endpoint was 200.  Which is nice as that
-    // allows to make some assumptions.
-    // This field is made public so that we can have it in just one place
-    // instead of duplicating it in other classes which take advantage of
-    // this assumption.
-    public const int MAX_IDS_COUNT = 200;
-
     private bool _disposed = false;
     private static readonly UriBuilder _bestStoriesUriBuilder = new UriBuilder("https://hacker-news.firebaseio.com/v0/beststories.json");
 
@@ -23,12 +14,13 @@ public class HackerNewsClient : IHackerNewsClient {
 
     /// <summary>
     /// Gets the specified amount of best stories ids from the HackerNews API.
-    /// The <c>n</c> has to be in range from 1 to <c>MAX_IDS_COUNT</c> otherwise it will be clamped.
+    /// Negative values of <c>n</c> will result in empty result.
     /// </summary>
     public async Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct) {
         if (n <= 0) return Array.Empty<int>();
-        if (n > MAX_IDS_COUNT) n = MAX_IDS_COUNT;
-        _bestStoriesUriBuilder.Query = $"?orderBy=\"$key\"&limitToFirst={n}";
+        _bestStoriesUriBuilder.Query = n < int.MaxValue ?
+            $"?orderBy=\"$key\"&limitToFirst={n}" :
+            string.Empty;
         using var bestStoriesIdsResponse = await _client.GetAsync(_bestStoriesUriBuilder.Uri, ct);
         bestStoriesIdsResponse.EnsureSuccessStatusCode();
         return await bestStoriesIdsResponse.Content.ReadFromJsonAsync<int[]>(ct) ??

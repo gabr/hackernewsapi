@@ -7,7 +7,6 @@ namespace Api;
 public interface IHackerNewsClient : IDisposable {
     /// <summary>
     /// Gets the specified amount of best stories ids from the HackerNews.
-    /// The <c>n</c> has to be in range from 1 to <c>MAX_IDS_COUNT</c> otherwise it will be clamped.
     /// </summary>
     Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct);
 

@@ -57,14 +57,11 @@ for examples on how to call the API and get formatted JSON response.
 
 ## Assumptions
 
-The main assumption is that the maximum amount of best stories ids returned by
-the `beststories.json` endpoint is 200.  That behaviour is not documented but
-I've tested it thoroughly.
+There is an assumption that the stories don't change too often.
+That allows to cache them for some time - 5 sec by default.
 
-Based on that assumption a lot of collection have pre allocated sizes and we
-always fetch all the best stories which allows us to serve all the possible
-API calls in constant time - no matter if you ask for just one or for 200
-stories - all the data is already fetched.
+That assumption is made only for individual stories - the list of best stories
+ids is always queried in its entirety periodically  - 1 sec by default.
 
 The downsize of that is that the data you are getting from this API might be
 old.  How old?  It depends how long it takes to fetch it from the HackerNews
@@ -72,7 +69,7 @@ API which is quite inconsistent and sometimes the data fetch takes less then
 a second and other times it takes a couple of seconds.  Typically it is around
 1-2 seconds tho.  So taking that into account - and the delay between data
 fetches which is coded to 1 second - the data you fetch from the `/best`
-endpoint will be typically 2 to 3 seconds old.
+endpoint will be typically 2 seconds old.
 
 Which for the discussion aggregation website is totally fine in my opinion as
 the only thing that changes the output of the `/beststories` API are the user
@@ -97,4 +94,8 @@ That was easy to work with but that's something which could be improved.
 
 Rest of the implementation changes would be dictated by the profiling outcome.
 
-a side note: I would also just scrap the data directly from the website instead of using the API as that would allow me to limit the number of necessary calls from 201 to just 7.
+---
+
+a side note: I would also just scrap the data directly from the website instead
+of using the API as that would allow me to limit the number of necessary calls
+from 201 to just 7.

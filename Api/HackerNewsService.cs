@@ -13,7 +13,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     // hardcoded values picked arbitrary
     // Could be exposed in appsettings.json but in reality
     // should not be changed without careful consideration.
-    private static readonly TimeSpan FETCH_DELAY = TimeSpan.FromSeconds(1.5);
+    private static readonly TimeSpan FETCH_DELAY = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromSeconds(5);
 
     // It seems to work the fastest with just two clients.
@@ -24,8 +24,8 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     // performance gain from that was unstable.
     private readonly IHackerNewsClient[] _clients = new IHackerNewsClient[2];
 
-    // Just a premade bucket to not have to create it during the execution.
-    private Task<HackerNewsStory>[] _tasks = new Task<HackerNewsStory>[HackerNewsClient.MAX_IDS_COUNT];
+    // To not to have to allocate the array every time
+    private Task<HackerNewsStory>[] _tasks = Array.Empty<Task<HackerNewsStory>>();
 
     // Before first data is fetched we have to give something to await on.
     // After first data is fetched it's not relevant anymore.
@@ -40,7 +40,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     // The stories cache.  We assume that we can reuse stories for some time
     // specified in CACHE_EXPIRATION to not to have to fetch every story every time.
     private ConcurrentDictionary<int, CachedHackerNewsStory> _storiesCache
-        = new ConcurrentDictionary<int, CachedHackerNewsStory>(-1, HackerNewsClient.MAX_IDS_COUNT*2);
+        = new ConcurrentDictionary<int, CachedHackerNewsStory>(-1, 1024);
 
     private readonly ILogger<HackerNewsService> _logger;
     private bool _disposed = false;
@@ -94,7 +94,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
                 stopWatch.Start();
                 await FetchNewData(ct);
                 stopWatch.Stop();
-                _logger.LogDebug($"{nameof(HackerNewsService)}: {DateTime.UtcNow.ToString("o")} fetched data - elapsed: {stopWatch.Elapsed}");
+                _logger.LogDebug($"{nameof(HackerNewsService)}: {DateTime.UtcNow.ToString("o")} fetched {_stories.Length} stories in {stopWatch.Elapsed.TotalMilliseconds} ms");
                 stopWatch.Reset();
                 // double check before the dealy as the fetching might have taken a while
                 if (ct.IsCancellationRequested) break;
@@ -124,7 +124,10 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     private async Task FetchNewData(CancellationToken ct) {
         try {
             // always get entire list of best stories
-            var bestStoriesIds = await _clients[0].GetNBestStoriesIdsAsync(HackerNewsClient.MAX_IDS_COUNT, ct);
+            var bestStoriesIds = await _clients[0].GetNBestStoriesIdsAsync(int.MaxValue, ct);
+            // if our bucket of tasks is not enough allocate a new collection
+            if (_tasks.Length < bestStoriesIds.Length)
+                _tasks = new Task<HackerNewsStory>[bestStoriesIds.Length];
             var stories = new HackerNewsStory[bestStoriesIds.Length];
             // kick start all the requests
             var fetchTime = DateTime.UtcNow;

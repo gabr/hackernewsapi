@@ -16,6 +16,7 @@ public class Program
         // That way we have single and the same instance in both places.
         builder.Services.AddSingleton<HackerNewsService>();
         builder.Services.AddHostedService<HackerNewsService>(s => s.GetRequiredService<HackerNewsService>());
+
         var app = builder.Build();
         // grab the logger just to log out if the mocked data is used
         var logger = app.Services.GetRequiredService<ILogger<Program>>();
