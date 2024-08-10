@@ -4,7 +4,7 @@ using System.Text.Json;
 using var client = new HttpClient();
 var stopWatch = new Stopwatch();
 
-async Task<double> Get(string url) {
+async Task Get(string url) {
     Console.WriteLine($"GET: '{url}'");
     stopWatch.Reset();
     stopWatch.Start();
@@ -15,31 +15,41 @@ async Task<double> Get(string url) {
         new JsonSerializerOptions() { WriteIndented = true });
     Console.WriteLine(json);
     Console.WriteLine($"elapsed: {stopWatch.Elapsed.TotalMilliseconds} ms");
-    return stopWatch.Elapsed.TotalMilliseconds;
 }
 
 async Task StressTest() {
-    var elapsedMax = new double[1000];
-    var elapsedMin = new double[1000];
-    var elapsedAvr = new double[1000];
-    await Parallel.ForAsync(0, 1000,
-        new ParallelOptions { MaxDegreeOfParallelism = 100 },
+    const int tasks = 10;
+    const int requests = 10000;
+    var elapsed = new double[requests];
+    var stopwatches = Enumerable.Range(0, requests).Select(_ => new Stopwatch()).ToArray();
+    var clients = Enumerable.Range(0, tasks).Select(_ => new HttpClient()).ToArray();
+    var totalstopwatch = new Stopwatch();
+    Console.WriteLine($"{DateTime.Now.ToString("o")} StressTest start");
+    totalstopwatch.Start();
+    await Parallel.ForAsync(0, requests,
+        new ParallelOptions { MaxDegreeOfParallelism = tasks },
         async (i, _) => {
-            var e = new double[4];
-            e[0] = await Get("http://localhost:5000/best?n=1");
-            e[1] = await Get("http://localhost:5000/best?n=101");
-            e[2] = await Get("http://localhost:5000/best?n=200");
-            e[3] = await Get("http://localhost:5000/best?n=500");
-            elapsedMax[i] = e.Max();
-            elapsedMin[i] = e.Min();
-            elapsedAvr[i] = e.Average();
+            stopwatches[i].Start();
+            await clients[i%clients.Length].GetStringAsync("http://localhost:5000/best?n=500");
+            stopwatches[i].Stop();
+            elapsed[i] = stopwatches[i].Elapsed.TotalMilliseconds;
         });
-    var max = elapsedMax.Max();
-    var min = elapsedMin.Min();
-    var avr = elapsedAvr.Average();
-    Console.WriteLine($"total - min: {min} ms, max: {max} ms, avr: {avr} ms");
+    totalstopwatch.Stop();
+    Console.WriteLine($"{DateTime.Now.ToString("o")} StressTest end");
+    foreach (var c in clients) c.Dispose();
+    var max = elapsed.Max();
+    var min = elapsed.Min();
+    var avr = elapsed.Average();
+    var std = Math.Sqrt(elapsed.Select(e => Math.Pow(e-avr,2)).Average());
+    Console.WriteLine($" requests per second: {requests/totalstopwatch.Elapsed.TotalSeconds}");
+    Console.WriteLine($" total time: {totalstopwatch.Elapsed}");
+    Console.WriteLine($" requests: {requests}");
+    Console.WriteLine($" min: {min} ms");
+    Console.WriteLine($" max: {max} ms");
+    Console.WriteLine($" avr: {avr} ms");
+    Console.WriteLine($" std: {std}");
 }
 
-//await StressTest();
 await Get("http://localhost:5000/best?n=10");
+await StressTest();
 
