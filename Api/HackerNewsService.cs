@@ -64,7 +64,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     /// After that all other calls are instantaneous hence the ValueTask type is used.
     /// </summary>
     public async ValueTask<string> GetBestStoriesAsJsonAsync(int count) {
-        if (count <= 0) return string.Empty;
+        if (count <= 0) return "[]";
         if (_stories.Length == 0) await _fetchedFirstStories.Task;
         var stories = _stories;
         return "[" +
@@ -72,7 +72,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
                 stories
                     .Take(count)
                     .OrderByDescending(s => s.Score)
-                    .Select(s => s.GetJson())
+                    .Select(s => s.ToJson())
                     .ToArray())
             + "]";
     }
@@ -124,7 +124,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
     private async Task FetchNewData(CancellationToken ct) {
         try {
             // always get entire list of best stories
-            var bestStoriesIds = await _clients[0].GetNBestStoriesIdsAsync(int.MaxValue, ct);
+            var bestStoriesIds = await _clients[0].GetAllBestStoriesIdsAsync(ct);
             // if our bucket of tasks is not enough allocate a new collection
             if (_tasks.Length < bestStoriesIds.Length)
                 _tasks = new Task<HackerNewsStory>[bestStoriesIds.Length];
@@ -140,7 +140,7 @@ public class HackerNewsService : BackgroundService, IDisposable  {
             // wait for the responses and update cache
             await Parallel.ForAsync(0, stories.Length, ct, async (i, _) => {
                 stories[i] = await _tasks[i];
-                AddStoryCache(stories[i], fetchTime);
+                AddStoryCache(bestStoriesIds[i], stories[i], DateTime.UtcNow);
             });
             // replace old collection with new data
             _stories = stories;
@@ -168,11 +168,11 @@ public class HackerNewsService : BackgroundService, IDisposable  {
 
     // does what it says
     // just a helper method to have less code in the FetchNewData method
-    private void AddStoryCache(HackerNewsStory story, DateTime fetchTime) {
-        if (_storiesCache.ContainsKey(story.Id)) return;
+    private void AddStoryCache(int id, HackerNewsStory story, DateTime fetchTime) {
+        if (_storiesCache.ContainsKey(id)) return;
         // intentionally ignoring the return value as it fails to add only if
         // the key already has assigned value which we know won't be the case
-        _ = _storiesCache.TryAdd(story.Id, new CachedHackerNewsStory() {
+        _ = _storiesCache.TryAdd(id, new CachedHackerNewsStory() {
             fetchTime = fetchTime,
             story = story,
         });

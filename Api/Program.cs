@@ -4,11 +4,11 @@ public class Program
 {
     public static void Main(string[] args) {
         var builder = WebApplication.CreateBuilder(args);
-        // the "MockData" in appsettings.json allows to specify which client will be used for fetching the data.
-        var mockData = builder.Configuration.GetValue<bool>("MockData");
-        Func<IHackerNewsClient> clientFactory = mockData ?
-            () => new HackerNewsClientMock(TimeSpan.FromMilliseconds(100)) :
-            () => new HackerNewsClient();
+        // the "StaticData" in appsettings.json allows to specify which client will be used for fetching the data.
+        var staticData = builder.Configuration.GetValue<bool>("StaticData");
+        Func<IHackerNewsClient> clientFactory = staticData ?
+            () => new HackerNewsStaticDataClient(TimeSpan.FromMilliseconds(100)) :
+            () => new HackerNewsWebApiClient();
         builder.Services.AddSingleton<Func<IHackerNewsClient>>(clientFactory);
         // The HackerNewsService is used mostly as a BackgroundService and periodically runs fetching code
         // but because we also need to access the fetched data in our API endpoint we register it as a regular
@@ -20,7 +20,7 @@ public class Program
         var app = builder.Build();
         // grab the logger just to log out if the mocked data is used
         var logger = app.Services.GetRequiredService<ILogger<Program>>();
-        if (mockData) logger.LogInformation("using mocked data");
+        if (staticData) logger.LogInformation("using static data");
         using var hackerNewsService = app.Services.GetRequiredService<HackerNewsService>();
         // I'm using the minimalistic API syntax as that's all I need for this application
         app.MapGet("/best", async (Int32 n = 10) => Results.Content(

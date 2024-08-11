@@ -1,18 +1,19 @@
 namespace Api;
 
 /// <summary>
-/// Returns fake test data instead of actually calling the HackerNews API.
+/// Returns static data instead of actually calling the HackerNews API.
 /// Done to test performance and behavior of the code without the added
 /// noise of the network and the HN API latencies.  The data returned by the
 /// class is fixed and predictable the same with configurable delay.
 /// </summary>
-public class HackerNewsClientMock : IHackerNewsClient {
+public class HackerNewsStaticDataClient : IHackerNewsClient {
+    public const int STORIES_COUNT = 200;
     private TimeSpan _delay;
 
     /// <summary>
-    /// Create mock class with added delaty to each call.
+    /// Create class with added delaty to each call.
     /// </summary>
-    public HackerNewsClientMock(TimeSpan delay) {
+    public HackerNewsStaticDataClient(TimeSpan delay) {
         _delay = delay;
     }
 
@@ -20,10 +21,9 @@ public class HackerNewsClientMock : IHackerNewsClient {
     /// Gets the specified amount of stories ids.
     /// These are just the integers from 0 to n-1.
     /// </summary>
-    public async Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct) {
-        if (n <= 0) return Array.Empty<int>();
+    public async Task<int[]> GetAllBestStoriesIdsAsync(CancellationToken ct) {
         await Task.Delay(_delay, ct);
-        var ids = new int[n];
+        var ids = new int[STORIES_COUNT];
         for (int i = 0; i < ids.Length; i++) ids[i] = i;
         return ids;
     }
@@ -36,13 +36,12 @@ public class HackerNewsClientMock : IHackerNewsClient {
     public async Task<HackerNewsStory> GetStoryByIdAsync(int id, CancellationToken ct) {
         await Task.Delay(_delay, ct);
         return new HackerNewsStory {
-            Id          = id,
             Title       = $"Test story with id: {id}",
             Time        = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Score       = id,
-            By          = "mock client",
-            Descendants = id,
-            Url         = "mock url",
+            By          = "static data client",
+            Descendants = 0,
+            Url         = "https://static/data/fake/url.html",
         };
     }
 

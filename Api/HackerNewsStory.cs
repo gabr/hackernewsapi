@@ -12,8 +12,6 @@ namespace Api;
 /// </summary>
 public class HackerNewsStory {
     // the fields we return when serializing to JSON
-    [JsonIgnore]
-    public int     Id           { get; init; }
     public string? Title        { get; init; }
     public string? Uri          => Url;
     public string? PostedBy     => By;
@@ -29,7 +27,7 @@ public class HackerNewsStory {
     // serialize to JSON only once to not to repeat the work
     // for other connections asking for the same data
     private string? _json = null;
-    public string GetJson() {
+    public string ToJson() {
         if (_json == null)
             _json = JsonSerializer.Serialize(this);
         return _json;

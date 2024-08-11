@@ -6,13 +6,13 @@ namespace Api;
 /// </summary>
 public interface IHackerNewsClient : IDisposable {
     /// <summary>
-    /// Gets the specified amount of best stories ids from the HackerNews.
+    /// Gets all the best stories ids from the HackerNews.
     /// </summary>
-    Task<int[]> GetNBestStoriesIdsAsync(int n, CancellationToken ct);
+    Task<int[]> GetAllBestStoriesIdsAsync(CancellationToken ct);
 
     /// <summary>
     /// Gets specified story details.
-    /// The provided id has to come from the <c>GetNBestStoriesIdsAsync</c>
+    /// The provided id has to come from the <c>GetBestStoriesIdsAsync</c>
     /// otherwise you might get unexpected results.
     /// </summary>
     Task<HackerNewsStory> GetStoryByIdAsync(int id, CancellationToken ct);
