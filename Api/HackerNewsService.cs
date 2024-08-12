@@ -56,7 +56,6 @@ public class HackerNewsService : BackgroundService, IDisposable  {
         }
     }
 
-
     /// <summary>
     /// Returns the specified amount of best stories from Hacker News
     /// as JSON Array sorted in descending order by their Score.

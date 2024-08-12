@@ -82,7 +82,7 @@ public class HackerNewsServiceTest {
         // just get some stories to make sure the service fetched the data
         var stories1 = GetStoriesFromService(1);
         Assert.That(stories1.Length, Is.GreaterThan(0));
-        // no block the client
+        // now block the client
         _clientMock.Mutex.WaitOne();
         // we should still be able to get stories even tho the client is
         // blocked as the service should cache the data for some time
